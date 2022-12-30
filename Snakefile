@@ -8,7 +8,7 @@ configfile: "./config/config.yaml"
 FAMILIES, = glob_wildcards("../pedigrees/{family}_pedigree.ped")
 SAMPLES, = glob_wildcards("../test/{sample}_R1.fastq.gz") # to adapt
 
-
+SAM, = glob_wildcards("unmapêd_bams/{sample}_R1.fastq.gz")
 ##### Setup helper functions #####
 import csv
 import glob
@@ -21,14 +21,11 @@ def get_input_fastq(command):
     input_files = ""
 
     if config['TRIM'] == "No" or config['TRIM'] == "no":
-        input_files = ["../test/{sample}_R1.fastq.gz", "../test/{sample}_R2.fastq.gz"] # to adapt
+        input_files = ["unmapped_bams/{sample}_R1.fastq.gz", "unmapped_bams/{sample}_R2.fastq.gz"] # to adapt
     if config['TRIM'] == "Yes" or config['TRIM'] == "yes":
         input_files = ["aligned_reads/{sample}_1_val_1.fq.gz", "aligned_reads/{sample}_2_val_2.fq.gz"]
 
     return input_files
-
-
-
 
 
 
@@ -156,9 +153,9 @@ include: "rules/gatk_FastqToSam.smk"
 
 if config['TRIM'] == "No" or config['TRIM'] == "no":
     #include: "rules/gatk_FastqToSam.smk" 
-    include: "rules/gatk_CollectQualityYieldMetrics.smk"
     include: "rules/SamToFastqAndBwaMemAndMba.smk"
-    include: "rules/gatk_SortSam.smk"
+    include: "rules/bwa_mem.smk"
+    #include: "rules/gatk_SortSam.smk"
 if config['TRIM'] == "Yes" or config['TRIM'] == "yes":
     include: "rules/trim_galore_pe.smk"
     include: "rules/multiqc_trim.smk"
@@ -168,7 +165,7 @@ if config['GPU_ACCELERATED'] == "No" or config['GPU_ACCELERATED'] == "no":
     include: "rules/gatk_MarkDuplicates.smk"
     include: "rules/gatk_BaseRecalibrator.smk"
     include: "rules/gatk_ApplyBQSR.smk"
-    include: "rules/gatk_CollectMultipleMetrics.smk"
+    #include: "rules/gatk_CollectMultipleMetrics.smk"
 if (config['GPU_ACCELERATED'] == "No" or config['GPU_ACCELERATED'] == "no") and (config['DATA'] == "Single" or config['DATA'] == 'single'):
     include: "rules/gatk_HaplotypeCaller_single.smk"
 

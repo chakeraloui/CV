@@ -3,7 +3,9 @@ rule SamToFastqAndBwaMemAndMba:
         ubam = "unmapped_bams/{sample}_unmapped.bam",
         refgenome = expand("{refgenome}", refgenome = config['REFGENOME'])
     output: 
-        bam ="aligned_reads/{sample}_aligned.unsorted.bam"
+        bam ="aligned_reads/{sample}_aligned.unsorted.bam",
+        fastq1="unmapped_bams/{sample}_R1.fastq.gz",
+        fastq2="unmapped_bams/{sample}_R2.fastq.gz"
     params:
         readgroup = "'@RG\\tID:{sample}_rg1\\tLB:lib1\\tPL:bar\\tSM:{sample}\\tPU:{sample}_rg1'",
         #readgroup =  "'@RG\tID:{sample}\tPL:ILLUMINA\tSM:{sample}'" ,
@@ -24,37 +26,9 @@ rule SamToFastqAndBwaMemAndMba:
     message:
         "Mapping sequences against a reference human genome with BWA-MEM for {input.ubam}"
     shell:
-         """java -Xms1000m -Xmx1000m -jar ../tools/picard.jar SamToFastq \
-         INPUT={input.ubam} \
-         FASTQ=/dev/stdout \
-         INTERLEAVE=true \
-         NON_PF=true |      bwa mem -M -t {threads} -K 10000000 {input.refgenome} /dev/stdin - 2> >(tee {params.sample_name}.bwa.stderr.log >&2) | \
-         java -Dsamjdk.compression_level={params.compression_level} -Xms1000m -Xmx1000m -jar ../tools/picard.jar \
-         MergeBamAlignment \
-         VALIDATION_STRINGENCY=SILENT \
-         EXPECTED_ORIENTATIONS=FR \
-         ATTRIBUTES_TO_RETAIN=X0 \
-         ATTRIBUTES_TO_REMOVE=NM \
-         ATTRIBUTES_TO_REMOVE=MD \
-         ALIGNED_BAM=/dev/stdin \
-         UNMAPPED_BAM={input.ubam} \
-         OUTPUT={output.bam} \
-         REFERENCE_SEQUENCE={input.refgenome} \
-         SORT_ORDER="unsorted" \
-         IS_BISULFITE_SEQUENCE=false \
-         ALIGNED_READS_ONLY=false \
-         CLIP_ADAPTERS=false \
-         CLIP_OVERLAPPING_READS=true \
-         CLIP_OVERLAPPING_READS_OPERATOR=H \
-         MAX_RECORDS_IN_RAM=2000000 \
-         ADD_MATE_CIGAR=true \
-         MAX_INSERTIONS_OR_DELETIONS=-1 \
-         PRIMARY_ALIGNMENT_STRATEGY=MostDistant \
-         PROGRAM_RECORD_ID="bwamem" \
-         PROGRAM_GROUP_VERSION="{params.BWA_VERSION}" \
-         PROGRAM_GROUP_COMMAND_LINE="{params.bwa_commandline}" \
-         PROGRAM_GROUP_NAME="bwamem" \
-         UNMAPPED_READ_STRATEGY=COPY_TO_TAG \
-         ALIGNER_PROPER_PAIR_FLAGS=true \
-         UNMAP_CONTAMINANT_READS=true \
-         ADD_PG_TAG_TO_READS=false"""
+         """java -Xms20G -Xmx50G -jar ../tools/picard.jar SamToFastq \
+         INPUT = {input.ubam} \
+         FASTQ = {output.fastq1} \
+         SECOND_END_FASTQ = {output.fastq2}\
+         INTERLEAVE = true \
+         NON_PF=true &>{log}"""
