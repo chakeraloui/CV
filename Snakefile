@@ -8,7 +8,7 @@ configfile: "./config/config.yaml"
 FAMILIES, = glob_wildcards("../pedigrees/{family}_pedigree.ped")
 SAMPLES, = glob_wildcards("../test/{sample}_R1.fastq.gz") # to adapt
 
-SAM, = glob_wildcards("unmapêd_bams/{sample}_R1.fastq.gz")
+
 ##### Setup helper functions #####
 import csv
 import glob
@@ -22,6 +22,22 @@ def get_input_fastq(command):
 
     if config['TRIM'] == "No" or config['TRIM'] == "no":
         input_files = ["unmapped_bams/{sample}_R1.fastq.gz", "unmapped_bams/{sample}_R2.fastq.gz"] # to adapt
+    if config['TRIM'] == "Yes" or config['TRIM'] == "yes":
+        input_files = ["aligned_reads/{sample}_1_val_1.fq.gz", "aligned_reads/{sample}_2_val_2.fq.gz"]
+
+    return input_files
+
+
+
+def get_input_fastq_t(command):
+    """Return a string which defines the input fastq files for the bwa_mem and pbrun_germline rules.
+    This changes based on the user configurable options for trimming
+    """
+
+    input_files = ""
+
+    if config['TRIM'] == "No" or config['TRIM'] == "no":
+        input_files = ["../test/{sample}_R1.fastq.gz", "../test/{sample}_R2.fastq.gz"] # to adapt
     if config['TRIM'] == "Yes" or config['TRIM'] == "yes":
         input_files = ["aligned_reads/{sample}_1_val_1.fq.gz", "aligned_reads/{sample}_2_val_2.fq.gz"]
 
@@ -134,15 +150,15 @@ if config['DATA'] == "Single" or config['DATA'] == 'single':
         input:
            # "aligned_reads/multiqc_report.html",
             expand("aligned_reads/{sample}_recalibrated.bam", sample = SAMPLES),
-            expand("aligned_reads/{sample}_raw_snps_indels.vcf", sample = SAMPLES),
+            expand("aligned_reads/{sample}_raw_snps_indels.vcf.gz", sample = SAMPLES),
             
 
 if config['DATA'] == "Cohort" or config['DATA'] == 'cohort':
     rule all:
         input:
-          #  "aligned_reads/multiqc_report.html",
+            #"aligned_reads/multiqc_report.html",
             expand("aligned_reads/{sample}_recalibrated.bam", sample = SAMPLES),
-            expand("aligned_reads/{family}_raw_snps_indels.vcf", family = FAMILIES)
+            expand("aligned_reads/{family}_raw_snps_indels.vcf.gz", family = FAMILIES)
 
 ##### Load rules #####
 #localrules: multiqc
@@ -150,22 +166,21 @@ if config['DATA'] == "Cohort" or config['DATA'] == 'cohort':
 
 #include: "rules/fastqc.smk"
 include: "rules/gatk_FastqToSam.smk"
-
+include: "rules/SamToFastqAndBwaMemAndMba.smk"
 if config['TRIM'] == "No" or config['TRIM'] == "no":
-    #include: "rules/gatk_FastqToSam.smk" 
-    include: "rules/SamToFastqAndBwaMemAndMba.smk"
-    include: "rules/bwa_mem.smk"
-    #include: "rules/gatk_SortSam.smk"
+    include: "rules/multiqc.smk"
+
 if config['TRIM'] == "Yes" or config['TRIM'] == "yes":
     include: "rules/trim_galore_pe.smk"
     include: "rules/multiqc_trim.smk"
 
 if config['GPU_ACCELERATED'] == "No" or config['GPU_ACCELERATED'] == "no":
-    #include: "rules/bwa_mem.smk"
+    include: "rules/bwa_mem.smk"
     include: "rules/gatk_MarkDuplicates.smk"
+    include: "rules/gatk_SortSam.smk"
     include: "rules/gatk_BaseRecalibrator.smk"
     include: "rules/gatk_ApplyBQSR.smk"
-    #include: "rules/gatk_CollectMultipleMetrics.smk"
+
 if (config['GPU_ACCELERATED'] == "No" or config['GPU_ACCELERATED'] == "no") and (config['DATA'] == "Single" or config['DATA'] == 'single'):
     include: "rules/gatk_HaplotypeCaller_single.smk"
 

@@ -1,9 +1,9 @@
 rule gatk_MarkDuplicates:
     input:
-        bams = "aligned_reads/{sample}_aligned_sorted.bam"
+        bams = "aligned_reads/{sample}_aligned_unsorted.bam"
     output:
-        bam = temp("aligned_reads/{sample}_sorted_mkdups.bam"),
-        metrics = "aligned_reads/{sample}_sorted_mkdups_metrics.txt"
+        bam = temp("aligned_reads/{sample}_unsorted_mkdups.bam"),
+        metrics = "aligned_reads/{sample}_unsorted_mkdups_metrics.txt"
     params:
         maxmemory = expand('"-Xmx{maxmemory}"', maxmemory = config['MAXMEMORY']),
         tdir = config['TEMPDIR'],
@@ -18,6 +18,9 @@ rule gatk_MarkDuplicates:
     message:
         "Locating and tagging duplicate reads in {input}"
     shell:
-        "gatk MarkDuplicatesSpark   -I {input.bams}   -O {output.bam} -M {output.metrics} {params.others} {params.spark}&> {log}"
+        """gatk MarkDuplicatesSpark  \
+        -I {input.bams}   \
+        -O {output.bam} \
+        -M {output.metrics} {params.others} {params.spark}&> {log}"""
 
       

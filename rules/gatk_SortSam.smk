@@ -1,10 +1,9 @@
 rule gatk_sortSam:
     input:
-        bam = "aligned_reads/{sample}_aligned.unsorted.bam"
+        bam = "aligned_reads/{sample}_aligned_unsorted_mkdups.bam"
     output:
-        bam = "aligned_reads/{sample}_sorted.bam",
-        mapped_bam_readgroup="aligned_reads/{sample}_mapped_bam.readgroup",
-        bam2="aligned_reads/{sample}_aligned_sorted.bam"
+        bam = "aligned_reads/{sample}_sorted_mkdups.bam",
+        mapped_bam_readgroup="aligned_reads/{sample}_mapped_bam.readgroup"
     conda:
         "../envs/picard.yaml"
     log:
@@ -27,7 +26,7 @@ rule gatk_sortSam:
         java -Dsamjdk.compression_level=2 -Xms10000m -Xmx30000m -jar ../tools/picard.jar \
         SortSam \
         INPUT={input.bam} \
-        OUTPUT={output.bam2} \
+        OUTPUT={output.bam} \
         SORT_ORDER="coordinate" \
         CREATE_INDEX=true \
         CREATE_MD5_FILE=true \

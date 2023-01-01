@@ -3,7 +3,8 @@ rule SamToFastqAndBwaMemAndMba:
         ubam = "unmapped_bams/{sample}_unmapped.bam",
         refgenome = expand("{refgenome}", refgenome = config['REFGENOME'])
     output: 
-        bam ="aligned_reads/{sample}_aligned.unsorted.bam",
+       # bam ="aligned_reads/{sample}_aligned.unsorted.bam",
+        # f2="unmapped_bams/{sample}_R2.fastq",
         fastq1="unmapped_bams/{sample}_R1.fastq.gz",
         fastq2="unmapped_bams/{sample}_R2.fastq.gz"
     params:
@@ -17,18 +18,17 @@ rule SamToFastqAndBwaMemAndMba:
         compression_level ="2",
         BWA_VERSION="0.7.17"
     log:
-        "logs/bwa_mem/{sample}.log"
+        "logs/samtofastq/{sample}.log"
     benchmark:
-        "benchmarks/bwa_mem/{sample}.tsv"
+        "benchmarks/samtofastq/{sample}.tsv"
     conda:
         "../envs/bwa.yaml"
     threads: config['THREADS']
     message:
         "Mapping sequences against a reference human genome with BWA-MEM for {input.ubam}"
     shell:
-         """java -Xms20G -Xmx50G -jar ../tools/picard.jar SamToFastq \
-         INPUT = {input.ubam} \
-         FASTQ = {output.fastq1} \
-         SECOND_END_FASTQ = {output.fastq2}\
-         INTERLEAVE = true \
-         NON_PF=true &>{log}"""
+        """java  -jar ../tools/picard.jar SamToFastq  \
+         --INPUT {input.ubam}  \
+         --FASTQ {output.fastq1}  \
+         --SECOND_END_FASTQ {output.fastq2} \
+         -NON_PF true    &>{log}"""
