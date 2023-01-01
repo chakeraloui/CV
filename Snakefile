@@ -29,19 +29,6 @@ def get_input_fastq(command):
 
 
 
-def get_input_fastq_t(command):
-    """Return a string which defines the input fastq files for the bwa_mem and pbrun_germline rules.
-    This changes based on the user configurable options for trimming
-    """
-
-    input_files = ""
-
-    if config['TRIM'] == "No" or config['TRIM'] == "no":
-        input_files = ["../test/{sample}_R1.fastq.gz", "../test/{sample}_R2.fastq.gz"] # to adapt
-    if config['TRIM'] == "Yes" or config['TRIM'] == "yes":
-        input_files = ["aligned_reads/{sample}_1_val_1.fq.gz", "aligned_reads/{sample}_2_val_2.fq.gz"]
-
-    return input_files
 
 
 
@@ -148,25 +135,26 @@ report: "report/workflow.rst"
 if config['DATA'] == "Single" or config['DATA'] == 'single':
     rule all:
         input:
-           # "aligned_reads/multiqc_report.html",
+            "aligned_reads/multiqc_report.html",
             expand("aligned_reads/{sample}_recalibrated.bam", sample = SAMPLES),
-            expand("aligned_reads/{sample}_raw_snps_indels.vcf.gz", sample = SAMPLES),
+            expand("aligned_reads/{sample}_raw_snps_indels.vcf", sample = SAMPLES),
             
 
 if config['DATA'] == "Cohort" or config['DATA'] == 'cohort':
     rule all:
         input:
-            #"aligned_reads/multiqc_report.html",
+            "aligned_reads/multiqc_report.html",
             expand("aligned_reads/{sample}_recalibrated.bam", sample = SAMPLES),
-            expand("aligned_reads/{family}_raw_snps_indels.vcf.gz", family = FAMILIES)
+            expand("aligned_reads/{family}_raw_snps_indels.vcf", family = FAMILIES)
 
 ##### Load rules #####
 #localrules: multiqc
 
 
-#include: "rules/fastqc.smk"
 include: "rules/gatk_FastqToSam.smk"
-include: "rules/SamToFastqAndBwaMemAndMba.smk"
+include: "rules/gatk_SamToFastq.smk"
+include: "rules/fastqc.smk"
+
 if config['TRIM'] == "No" or config['TRIM'] == "no":
     include: "rules/multiqc.smk"
 

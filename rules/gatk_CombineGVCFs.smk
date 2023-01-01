@@ -20,4 +20,4 @@ rule gatk_CombineGVCFs:
     message:
         "Merging one or more HaplotypeCaller GVCF files into a single GVCF"
     shell:
-        "gatk CombineGVCFs -R {input.refgenome} {params.command} -O {output.vcf} --tmp-dir {params.tdir} {params.other} &> {log}"
+        "gatk CombineGVCFs -R {input.refgenome} {params.command} -O {output.vcf} --tmp-dir {params.tdir} {params.other} && gatk IndexFeatureFile  -I {output.vcf}  &> {log}"

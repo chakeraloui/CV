@@ -1,12 +1,14 @@
 rule gatk_MarkDuplicates:
     input:
-        bams = "aligned_reads/{sample}_aligned_unsorted.bam"
+        bams = "aligned_reads/{sample}_unsorted.bam"
     output:
         bam = temp("aligned_reads/{sample}_unsorted_mkdups.bam"),
         metrics = "aligned_reads/{sample}_unsorted_mkdups_metrics.txt"
     params:
         maxmemory = expand('"-Xmx{maxmemory}"', maxmemory = config['MAXMEMORY']),
         tdir = config['TEMPDIR'],
+        mapped_bam_readgroup="{sample}_mapped_bam_readgroup",
+        out="aligned_reads",
         others= " --read-validation-stringency SILENT  --optical-duplicate-pixel-distance 2500 --treat-unsorted-as-querygroup-ordered --create-output-bam-index false ",
         spark= "--conf spark.local.dir=tdir --spark-runner LOCAL --spark-master 'local[10]'   --conf spark.driver.extraJavaOptions=-Xss2m --conf spark.executor.extraJavaOptions=-Xss2m --conf 'spark.kryo.referenceTracking=false'"   
     log:
@@ -18,9 +20,17 @@ rule gatk_MarkDuplicates:
     message:
         "Locating and tagging duplicate reads in {input}"
     shell:
-        """gatk MarkDuplicatesSpark  \
-        -I {input.bams}   \
-        -O {output.bam} \
-        -M {output.metrics} {params.others} {params.spark}&> {log}"""
+        """java -Xms5000m -Xmx6500m -jar ../tools/picard.jar \
+        CollectMultipleMetrics \
+        --INPUT {input.bams} \
+        --OUTPUT {params.out}/{params.mapped_bam_readgroup} \
+        --PROGRAM null \
+        --PROGRAM CollectBaseDistributionByCycle \
+        --PROGRAM CollectInsertSizeMetrics \
+        --PROGRAM MeanQualityByCycle \
+        --PROGRAM QualityScoreDistribution \
+        --METRIC_ACCUMULATION_LEVEL null \
+        --METRIC_ACCUMULATION_LEVEL ALL_READS && \
+        gatk MarkDuplicatesSpark   -I {input.bams}   -O {output.bam} -M {output.metrics} {params.others} {params.spark}&> {log}"""
 
       
